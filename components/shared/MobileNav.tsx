@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "../ui/button";
+import { DialogTitle } from "@radix-ui/react-dialog";
 
 const MobileNav = () => {
   const pathname = usePathname();
@@ -37,6 +38,7 @@ const MobileNav = () => {
               />
             </SheetTrigger>
             <SheetContent className="sheet-content sm:w-64">
+              <DialogTitle className="sr-only">Navegation Menu</DialogTitle>
               <>
                 <Image
                   src="/assets/images/logo-text.png"
