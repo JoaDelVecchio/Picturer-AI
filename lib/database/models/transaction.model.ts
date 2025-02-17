@@ -8,7 +8,7 @@ interface ITransaction {
   buyer: Schema.Types.ObjectId;
 }
 
-const TransactionSchema = new Schema(
+const TransactionSchema = new Schema<ITransaction>(
   {
     stripeId: {
       type: String,
