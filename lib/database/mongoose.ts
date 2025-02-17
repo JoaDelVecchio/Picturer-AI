@@ -11,14 +11,28 @@ interface MongooseConnection {
   promise: Promise<Mongoose> | null;
 }
 
-// ✅ Fix: Use `globalThis` to persist connection in serverless environments
-let cached: MongooseConnection = (globalThis as any).mongoose || {
+// ✅ Fix: Extend `globalThis` properly to avoid `any`
+declare global {
+  // Extend globalThis only in the NodeJS environment
+  namespace NodeJS {
+    interface Global {
+      mongoose?: MongooseConnection;
+    }
+  }
+}
+
+const globalWithMongoose = global as unknown as {
+  mongoose?: MongooseConnection;
+};
+
+// ✅ Fix: Use `globalWithMongoose` instead of `(globalThis as any).mongoose`
+let cached: MongooseConnection = globalWithMongoose.mongoose ?? {
   conn: null,
   promise: null,
 };
 
 export const connectToDatabase = async (): Promise<Mongoose> => {
-  if (cached.conn) return cached.conn; // ✅ Return existing connection if available
+  if (cached.conn) return cached.conn; // ✅ Return cached connection if available
 
   cached.promise =
     cached.promise ||
@@ -28,7 +42,8 @@ export const connectToDatabase = async (): Promise<Mongoose> => {
     });
 
   cached.conn = await cached.promise;
-  (globalThis as any).mongoose = cached; // ✅ Store the connection globally
+
+  globalWithMongoose.mongoose = cached; // ✅ Store the connection globally with correct typing
 
   return cached.conn;
 };
