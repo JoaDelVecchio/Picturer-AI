@@ -2,33 +2,33 @@ import mongoose, { Mongoose } from "mongoose";
 
 const MONGO_URI = process.env.MONGO_URI;
 
+if (!MONGO_URI) {
+  throw new Error("Missing MONGO_URI in environment variables.");
+}
+
 interface MongooseConnection {
   conn: Mongoose | null;
   promise: Promise<Mongoose> | null;
 }
 
-declare global {
-  var mongoose: MongooseConnection | undefined;
-}
+// ✅ Fix: Use `globalThis` to persist connection in serverless environments
+let cached: MongooseConnection = (globalThis as any).mongoose || {
+  conn: null,
+  promise: null,
+};
 
-let cached = global.mongoose as MongooseConnection | undefined;
+export const connectToDatabase = async (): Promise<Mongoose> => {
+  if (cached.conn) return cached.conn; // ✅ Return existing connection if available
 
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
-}
-
-export const connectToDatabase = async () => {
-  if (cached?.conn) return cached.conn;
-
-  if (!MONGO_URI) throw new Error("Missing MONGO_URI");
-
-  cached!.promise =
-    cached!.promise ||
+  cached.promise =
+    cached.promise ||
     mongoose.connect(MONGO_URI, {
-      dbName: "PicturerAI",
+      dbName: "myDatabase", // Change this to your actual database name
       bufferCommands: false,
     });
 
-  cached!.conn = await cached!.promise;
-  return cached!.conn;
+  cached.conn = await cached.promise;
+  (globalThis as any).mongoose = cached; // ✅ Store the connection globally
+
+  return cached.conn;
 };
